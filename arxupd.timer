@@ -1,0 +1,11 @@
+[Unit]
+Description=ARXOS auto-update timer — treat the thearxos repos as the update server
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=6h
+RandomizedDelaySec=5min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

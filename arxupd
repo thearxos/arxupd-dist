@@ -1,0 +1,76 @@
+#!/usr/bin/env bash
+ARXOS_VERSION="0.0.1"   # ARXOS: every tool pinned to 0.0.1
+case "${1:-}" in --version|-V) echo "arxupd ${ARXOS_VERSION} (ARXOS)"; exit 0 ;; esac
+# arxupd - ARXOS self-updater
+# Pulls each ARXOS feature repo (tools + cosmetics) from GitHub and runs its
+# install.sh, so the system receives updates the moment they're pushed.
+# Manifest: /etc/arxos/repos.list   (lines: "name  git-url  [branch]")
+
+set -o pipefail
+: "${TERM:=xterm-256color}"; export TERM   # quiet tput when launched without a terminal (GUI)
+GB=$'\033[1;38;5;220m'; CB=$'\033[1;38;5;45m'; C=$'\033[38;5;45m'
+GR=$'\033[1;32m'; RD=$'\033[1;31m'; DM=$'\033[90m'; BD=$'\033[1m'; RS=$'\033[0m'
+
+MANIFEST="${ARXOS_MANIFEST:-/etc/arxos/repos.list}"
+CACHE="${XDG_CACHE_HOME:-$HOME/.cache}/arxos/repos"
+mkdir -p "$CACHE"
+
+SPIN=('|' '/' '-' '\'); LOG=$(mktemp /tmp/arxupd.XXXXXX)
+trap 'rm -f "$LOG"; [ -t 1 ] && printf "\033[?25h" 2>/dev/null' EXIT INT TERM
+
+_spin(){ # pid label
+  local pid="$1" label="$2" i=0
+  # No TTY (GUI / pipe): don't emit spinner frames as lines — just wait quietly;
+  # the per-repo result line prints cleanly afterwards.
+  if [ ! -t 1 ]; then while kill -0 "$pid" 2>/dev/null; do sleep 0.2; done; return; fi
+  printf '\033[?25l'
+  while kill -0 "$pid" 2>/dev/null; do
+    printf "\r  ${C}%s${RS}  ${DM}%s${RS}\033[K" "${SPIN[i++ % ${#SPIN[@]}]}" "$label"; sleep 0.1
+  done
+  printf '\r\033[K\033[?25h'
+}
+
+[ -f "$MANIFEST" ] || { printf "  ${RD}xx${RS} no manifest at %s\n" "$MANIFEST"; exit 1; }
+
+printf "\n  ${GB}arx${CB}upd${RS} ${DM}::${RS} ${BD}syncing ARXOS feature repos${RS}\n\n"
+
+n_up=0 n_new=0 n_same=0 n_err=0
+while read -r name url branch _; do
+  [[ -z "$name" || "$name" == \#* ]] && continue
+  branch="${branch:-main}"
+  dir="$CACHE/$name"
+  status="" rc=0
+  if [ -d "$dir/.git" ]; then
+    git -C "$dir" remote set-url origin "$url" 2>/dev/null   # follow manifest URL changes (e.g. -> public -dist mirror)
+    before=$(git -C "$dir" rev-parse HEAD 2>/dev/null)
+    ( git -C "$dir" fetch -q --depth=1 origin "$branch" && \
+      git -C "$dir" reset -q --hard "origin/$branch" ) >"$LOG" 2>&1 & _spin $! "$name  (pulling)"
+    wait $!; rc=$?
+    after=$(git -C "$dir" rev-parse HEAD 2>/dev/null)
+    if   [ $rc -ne 0 ]; then status="err"
+    elif [ "$before" = "$after" ]; then status="same"
+    else status="upd"; fi
+  else
+    ( git clone -q --depth=1 -b "$branch" "$url" "$dir" ) >"$LOG" 2>&1 & _spin $! "$name  (cloning)"
+    wait $!; rc=$?
+    [ $rc -eq 0 ] && status="new" || status="err"
+  fi
+
+  # run the repo's installer on change
+  if [ "$status" = "upd" ] || [ "$status" = "new" ]; then
+    if [ -f "$dir/install.sh" ]; then
+      ( cd "$dir" && bash install.sh ) >"$LOG" 2>&1 & _spin $! "$name  (installing)"
+      wait $!; [ $? -ne 0 ] && status="err"
+    fi
+  fi
+
+  case "$status" in
+    upd)  printf "  ${GR}>>${RS} %-22s ${GR}updated${RS}\n"  "$name"; ((n_up++)) ;;
+    new)  printf "  ${GR}>>${RS} %-22s ${GR}installed${RS}\n" "$name"; ((n_new++)) ;;
+    same) printf "  ${DM}..${RS} %-22s ${DM}up to date${RS}\n" "$name"; ((n_same++)) ;;
+    err)  printf "  ${RD}xx${RS} %-22s ${RD}%s${RS}\n" "$name" "$(grep -iE 'error|fatal|could not' "$LOG" | head -1 | sed 's/^[^:]*: //')"; ((n_err++)) ;;
+  esac
+done < "$MANIFEST"
+
+printf "\n  ${DM}%s updated · %s installed · %s current · %s failed${RS}\n\n" "$n_up" "$n_new" "$n_same" "$n_err"
+[ "$n_err" -eq 0 ]

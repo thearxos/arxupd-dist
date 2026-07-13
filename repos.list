@@ -1,0 +1,21 @@
+# ARXOS component registry  —  name  git-url  branch  [type]
+#
+# This file is the single source of truth for what ships + updates on ARXOS.
+# `arx update` fetches THIS file from the canonical source first, then clones/pulls
+# every entry and runs its install.sh. So adding a line here pushes that component
+# (a new tool, a kernel, a core update) to every ARXOS install on its next update,
+# and the Control Center / arxos-news detect it automatically.
+#
+# type:  tool (default)  ·  core (arx/arxctl/arxupd)  ·  kernel (linux-arxos)
+arx https://github.com/thearxos/arx-dist main core
+arxctl https://github.com/thearxos/arxctl-dist main core
+arxupd https://github.com/thearxos/arxupd-dist main core
+arxos-vm-resize https://github.com/thearxos/arxos-vm-resize-dist main tool
+wallpimp https://github.com/thearxos/wallpimp-dist main tool
+anonkit https://github.com/thearxos/anonkit-dist main tool
+cpu-governor https://github.com/thearxos/cpu-governor-dist main tool
+droidB https://github.com/thearxos/droidB-dist main tool
+arxguard https://github.com/thearxos/arxguard-dist main tool
+arxos-greeter https://github.com/thearxos/arxos-greeter-dist main
+arxos-browser https://github.com/thearxos/arxos-browser-dist main core
+linux-arxos https://github.com/thearxos/linux-arxos-dist main kernel
