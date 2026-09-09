@@ -1,0 +1,35 @@
+# ARXOS component registry  —  name  git-url  branch  [type]
+#
+# WHAT ARX ACTUALLY READS (corrected 2026-09-09): the NAME field only.
+# Installs and update checks now go through the R2 index, not git: arx-core
+# ops::tools() downloads sha256-verified archives from tools.json, and
+# updates::tools_outdated() compares that index against /var/lib/arxos/tools/<name>.
+# Neither reads the url/branch/type columns (see ops.rs arxos_tool_bins: it takes
+# split_whitespace().next() and nothing else). arx uses the names here to
+# health-check the installed tool binaries.
+#
+# So the git-url / branch / type columns below are LEGACY TEXT, no longer consumed.
+# Some still point at `-dist` repos that were never created (arxos-browser-dist,
+# arxos-greeter-dist). Do NOT "fix" those URLs expecting update behaviour to change —
+# it will not; both of those tools already update fine via R2. Likewise the missing
+# type on the arxos-greeter line is harmless.
+#
+# TO ACTUALLY SHIP OR UPDATE A TOOL: publish it to R2 (arxpush tool-publish.sh ->
+# tools.json). A name listed here but ABSENT from tools.json cannot receive updates.
+# Currently unpublished (no R2 entry, so no updates): arxos-vm-resize, wallpimp,
+# cpu-governor, droidB, arxguard. linux-arxos is expected to be absent — kernels
+# update through their own `arx kernel` path and the arxos-kernels manifest.
+#
+# type: historical only — tool (default) · core (arx/arxctl/arxupd) · kernel (linux-arxos)
+arx https://github.com/thearxos/arx-dist main core
+arxctl https://github.com/thearxos/arxctl-dist main core
+arxupd https://github.com/thearxos/arxupd-dist main core
+arxos-vm-resize https://github.com/thearxos/arxos-vm-resize-dist main tool
+wallpimp https://github.com/thearxos/wallpimp-dist main tool
+anonkit https://github.com/thearxos/anonkit-dist main tool
+cpu-governor https://github.com/thearxos/cpu-governor-dist main tool
+droidB https://github.com/thearxos/droidB-dist main tool
+arxguard https://github.com/thearxos/arxguard-dist main tool
+arxos-greeter https://github.com/thearxos/arxos-greeter-dist main
+arxos-browser https://github.com/thearxos/arxos-browser-dist main core
+linux-arxos https://github.com/thearxos/linux-arxos-dist main kernel
