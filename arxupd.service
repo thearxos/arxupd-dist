@@ -1,0 +1,11 @@
+[Unit]
+Description=ARXOS self-update — pull feature repos from GitHub and apply them
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+# Runs as root so each repo's install.sh can place files system-wide.
+ExecStart=/usr/local/bin/arxupd
+Nice=10
+TimeoutStartSec=600
