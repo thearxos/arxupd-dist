@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+ARXOS_VERSION="0.0.1"   # ARXOS: every tool pinned to 0.0.1
+case "${1:-}" in --version|-V) echo "arxupd ${ARXOS_VERSION} (ARXOS)"; exit 0 ;; esac
+# arxupd — ARXOS self-updater. Now a thin delegate to `arx tools`, which fetches every ArxOS
+# tool from Cloudflare R2 (the latest compiled binary + its install.sh, sha256-verified,
+# fail-closed) and records the installed version. The old git-pull-from-`-dist` path is RETIRED:
+# it fought the R2 delivery model and could silently revert R2-installed tools to stale mirror
+# versions on its 6h timer. R2 is the delivery channel; the public GitHub source repos are for
+# community contribution, not the fetch path. `arx update` covers the system + the tools together.
+if ! command -v arx >/dev/null 2>&1; then
+  echo "arxupd: arx is not installed — arx is the updater now (install arx first)" >&2
+  exit 1
+fi
+exec arx tools "$@"

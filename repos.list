@@ -1,0 +1,32 @@
+# ArxOS component registry: name  git-url  branch  [type]
+#
+# What arx reads:
+#   name    arx health-checks the installed binaries of every name listed here.
+#   url     used only by `arx sync`, which keeps git copies in ~/.cache/arxos/repos.
+#   type    `bundled:<parent>` marks a component that ships inside another one's release.
+#           `arx sync` skips it, and it counts as delivered whenever its parent is.
+#           Other values (core, tool, kernel) are descriptive only.
+#
+# Installs and updates do not use git. They come from the R2 index (tools.json):
+# `arx tools` and `arx update` download sha256-checked archives into ~/.cache/arxos/tools
+# and run each one's install.sh. A name listed here with no index entry can never update,
+# and `arx update` says so by name (ops::registry_drift).
+#
+# Delivered by another route, on purpose: linux-arxos (kernels go through `arx kernel` and
+# the arxos-kernels manifest) and arxburn (it updates itself from its own releases).
+# Not registered: wallpimp. It has no dist installer and no R2 index entry, and it is not in the
+# image, so listing it only made every `arx update` report it as a tool that can never update.
+# Re-add it here in the same change that publishes it to R2.
+# Not registered: deathstroke. ArxOS does not ship it (2026-11-08) and it is delisted from the
+# R2 index, so no ArxOS command can install it. It continues as its own project.
+arx https://github.com/thearxos/arx-dist main core
+arxctl https://github.com/thearxos/arxctl-dist main core
+arxpods https://github.com/thearxos/arxctl-dist main bundled:arxctl
+arxupd https://github.com/thearxos/arxupd-dist main core
+anonkit https://github.com/thearxos/anonkit-dist main tool
+droidB https://github.com/thearxos/droidB-dist main tool
+arxguard https://github.com/thearxos/arxguard-dist main tool
+arxos-greeter https://github.com/thearxos/arxos-greeter-dist main
+arxos-browser https://github.com/thearxos/arxos-browser-dist main core
+arxburn https://github.com/0xb0rn3/arxburn main tool
+linux-arxos https://github.com/thearxos/linux-arxos-dist main kernel
